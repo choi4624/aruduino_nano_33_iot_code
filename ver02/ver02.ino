@@ -4,7 +4,6 @@
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiClient.h>
-#include <Arduino_JSON.h>
 
 #include <SoftwareSerial.h>
 #include <MHZ19.h>
@@ -13,8 +12,8 @@
 #define DHTTYPE DHT11
 
 const char* ssid="wifiname";
-const char* password="wifipassword";
-String a="";
+const char* password="password";
+const String endpoint="http://ziot.i4624.cf/sql/table";
 
 unsigned long now=0;
 unsigned long previousTime=0;
@@ -52,7 +51,7 @@ void loop() {
   now=millis();
   Serial.println(now);
 //  서버에서 데이터 받는 부분이 제일 먼저 들어가야됨.
-
+  
 //  센서값 측정
   //#1.온습도센서 D7
   float humi, temp;
@@ -84,11 +83,9 @@ void loop() {
     Serial.print(F("Error, code: "));
     Serial.println(response);
   }
-  
-  Serial.println(a);
 
 //  센서값을 서버에 전송하는 부분이 여기에 해당함.
-  String httpRequestData = "{\"온도\":\"" + String(temp) + "\",\"습도\":\"" + String(humi) + "\",\"수위\":\"" + String(val) + "\"}";
+  String httpRequestData = "{\"temperature\":\"" + String(temp) + "\",\"humi\":\"" + String(humi) + "\",\"waterLevel\":\"" + String(val) + "\",\"co2\":\"" + String(mhz.getCO2())+"\"}";
   if ((WiFi.status() == WL_CONNECTED)) {
 
     WiFiClient client;
@@ -96,7 +93,7 @@ void loop() {
 
     Serial.print("[HTTP] begin...\n");
     // configure traged server and url
-    http.begin(client, "http://ziot.i4624.cf/sql/edit/whrjs"); //HTTP
+    http.begin(client, "http://ziot.i4624.cf/sql/meka/insert"); //HTTP
     http.addHeader("Content-Type", "application/json");
 
     Serial.print("[HTTP] POST...\n");
@@ -133,13 +130,8 @@ void loop() {
     else{ //적정 수위보다 낮지 않다면 워터펌프가 작동안함.
       
     }
-  // !식물 탱크 말고, 물공급 탱크에도 센서를 달아서 그쪽 탱크에 물이 없으면 펌프 고장을 막기 위해 작동 안하는 구조가 필요할 것 같습니다. 
-    
-    
-    if(mhz.getCO2()<300){ //이산화탄소 농도가 300ppm 이하일 경우 팬이 작동함. !!1000ppm 이상일 수 없는게, 식물이 광합성을 하면서 이산화탄소 농도는 일반적으로 낮아져야 함. 일반 
-      // 대기중 이산화탄소 - 400ppm > 실내는 더 높음 
-      // 다시 생각해보면 그냥 한시간에 1분씩만 팬을 돌리는게 나을수도 ㅜ 
-      
+  
+    if(mhz.getCO2()>1000){ //이산화탄소 농도가 1000ppm 이상일 경우 팬이 작동함.
       if(temp<25){ //온도가 25보다 작다면 히터가 작동함.(히터&팬 작동)
         
       }else{ //온도가 25보다 크다면 팬만(팬만 작동)
@@ -152,6 +144,9 @@ void loop() {
       }else{ //온도가 25보다 크다면 아무것도 작동하지 않음.
         
       }
+    }
+    if(now<previousTime){ //아두이노가 켜지고 49.7일이 지나면 오버플로우가 발생하기 때문에 previousTime을 초기화 시킴.
+      previousTime=0;
     }
     if((now-previousTime)>=43200000){ //12시간임 간격으로
       previousTime=now;
