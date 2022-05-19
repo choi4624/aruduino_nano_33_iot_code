@@ -135,6 +135,10 @@ void loop() {
   }
 
 //  센서값을 서버에 전송하는 부분이 여기에 해당함.
+  // 이거 post 할때 센서 말고 다른것도 다 같이 보내야 함. 아니면 서버측에서 센서 정보를 다루는 걸 바꿔야 할 것 같음 
+  // 서버측에서 sensor 갱신용 insert 를 진행해야 깔끔할 것 같긴 함. SQL 2번? 써야하나? 
+  // 릴레이는 이전 DB값, 시간과 기타 정보는 기본값 이렇게 하면 깔끔할 것 같음 지금 sql/meka가 아예 null이라 표기가 안된걸 보아 센서 값 올리는게 다시 0으로 된다는게 이 문제인듯 
+  
   String httpRequestData = "{\"temperature\":\"" + String(temp) + "\",\"humi\":\"" + String(humi) + "\",\"waterLevel\":\"" + String(val) + "\",\"co2\":\"" + String(mhz.getCO2())+"\"}";
   if ((WiFi.status() == WL_CONNECTED)) {
 
