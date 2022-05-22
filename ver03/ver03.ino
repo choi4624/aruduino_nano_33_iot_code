@@ -32,8 +32,6 @@ String payload;
 
 int a;
 
-StaticJsonBuffer<400> jsonBuffer;
-
 SoftwareSerial ss(12,14); //RX=D5,TX=D6에 꽂으면 됨.
 MHZ19 mhz(&ss);
 
@@ -85,9 +83,14 @@ void loop() {
           payload = http.getString();
           Serial.println(payload);
           //--------------처음에만 정상적으로 값이 나오고 두번째부터 0이 나옴
+          StaticJsonBuffer<400> jsonBuffer;
           JsonArray& array1=jsonBuffer.parseArray(payload);
           JsonObject& obj1=array1[0];
-          a=obj1["autoMode"];
+          relay1=obj1["relay1"];
+          relay2=obj1["relay2"];
+          relay3=obj1["relay3"];
+          relay4=obj1["relay4"];
+          autoMode=obj1["autoMode"];
           Serial.println(a);
           //----------------------------------------------------
         }
@@ -135,11 +138,7 @@ void loop() {
   }
 
 //  센서값을 서버에 전송하는 부분이 여기에 해당함.
-  // 이거 post 할때 센서 말고 다른것도 다 같이 보내야 함. 아니면 서버측에서 센서 정보를 다루는 걸 바꿔야 할 것 같음 
-  // 서버측에서 sensor 갱신용 insert 를 진행해야 깔끔할 것 같긴 함. SQL 2번? 써야하나? 
-  // 릴레이는 이전 DB값, 시간과 기타 정보는 기본값 이렇게 하면 깔끔할 것 같음 지금 sql/meka가 아예 null이라 표기가 안된걸 보아 센서 값 올리는게 다시 0으로 된다는게 이 문제인듯 
-  
-  String httpRequestData = "{\"temperature\":\"" + String(temp) + "\",\"humi\":\"" + String(humi) + "\",\"waterLevel\":\"" + String(val) + "\",\"co2\":\"" + String(mhz.getCO2())+"\"}";
+  String httpRequestData = "{\"temperature\":\"" + String(temp) + "\",\"relay1\":\"" + String(relay1)+"\",\"relay2\":\"" + String(relay2)+"\",\"relay3\":\"" + String(relay3)+"\",\"relay4\":\"" + String(relay4)+"\",\"autoMode\":\"" + String(autoMode)+ "\",\"humi\":\"" + String(humi) + "\",\"waterLevel\":\"" + String(val) + "\",\"co2\":\"" + String(mhz.getCO2())+"\"}";
   if ((WiFi.status() == WL_CONNECTED)) {
 
     WiFiClient client;
@@ -178,12 +177,13 @@ void loop() {
 //  자동화 시스템(서버에서 auto값을 받아서 
 //  if(auto==1)이면 센서값에 따라 액츄에이터 작동, 
 //  else면 수동조작 데이터를 받아서 작동
+
   if(autoMode==1){
     if(val<400){ //적정 수위보다 낮으면 워터펌프가 작동함.
-      
+      digitalWrite(15,HIGH);
     }
     else{ //적정 수위보다 낮지 않다면 워터펌프가 작동안함.
-      
+      digitalWrite(15,LOW);
     }
   
     if(mhz.getCO2()<300){ //이산화탄소 농도가 300ppm 이하일 경우 팬이 작동함.
@@ -207,11 +207,11 @@ void loop() {
       previousTime=now;
       if(lightState==1){
         lightState=0;
-        digitalWrite(15,LOW);
+        
       }
       else{
         lightState=1;
-        digitalWrite(15,HIGH);
+        
       }
     }
   }
