@@ -18,13 +18,14 @@ const char* password="g01099844615";
 
 unsigned long now=0;
 unsigned long previousTime=0;
-int waterPump=0;
-int light=1;
-int heater=0;
-int fan=0;
+
+unsigned long previousForPost=0;
+
+unsigned long previousForGet=0;
+
 int lightState=1;
 int autoMode=1;
-int relay1=0; //기본값
+int relay1=1; //기본값
 int relay2=0;
 int relay3=0;
 int relay4=0;
@@ -59,51 +60,53 @@ void loop() {
   now=millis();
   Serial.println(now);
 //  서버에서 데이터 받는 부분이 제일 먼저 들어가야됨.
-  if ((WiFi.status()== WL_CONNECTED)) {
-
-    WiFiClient client;
-
-    HTTPClient http;
-
-    Serial.print("[HTTP] begin...\n");
-    if (http.begin(client, "http://ziot.i4624.cf/sql/meka/table/final")) {  // HTTP
-
-
-      Serial.print("[HTTP] GET...\n");
-      // start connection and send HTTP header
-      int httpCode = http.GET();
-
-      // httpCode will be negative on error
-      if (httpCode > 0) {
-        // HTTP header has been send and Server response header has been handled
-        Serial.printf("[HTTP] GET... code: %d\n", httpCode);
-
-        // file found at server
-        if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
-          payload = http.getString();
-          Serial.println(payload);
-          //--------------처음에만 정상적으로 값이 나오고 두번째부터 0이 나옴
-          StaticJsonBuffer<400> jsonBuffer;
-          JsonArray& array1=jsonBuffer.parseArray(payload);
-          JsonObject& obj1=array1[0];
-          relay1=obj1["relay1"];
-          relay2=obj1["relay2"];
-          relay3=obj1["relay3"];
-          relay4=obj1["relay4"];
-          autoMode=obj1["autoMode"];
-          Serial.println(a);
-          //----------------------------------------------------
+  if((now-previousForGet)>=1000){
+    previousForGet=now;
+    if ((WiFi.status()== WL_CONNECTED)) {
+  
+      WiFiClient client;
+  
+      HTTPClient http;
+  
+      Serial.print("[HTTP] begin...\n");
+      if (http.begin(client, "http://ziot.i4624.cf/sql/meka/table/final")) {  // HTTP
+  
+  
+        Serial.print("[HTTP] GET...\n");
+        // start connection and send HTTP header
+        int httpCode = http.GET();
+  
+        // httpCode will be negative on error
+        if (httpCode > 0) {
+          // HTTP header has been send and Server response header has been handled
+          Serial.printf("[HTTP] GET... code: %d\n", httpCode);
+  
+          // file found at server
+          if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
+            payload = http.getString();
+            Serial.println(payload);
+            //--------------처음에만 정상적으로 값이 나오고 두번째부터 0이 나옴
+            StaticJsonBuffer<400> jsonBuffer;
+            JsonArray& array1=jsonBuffer.parseArray(payload);
+            JsonObject& obj1=array1[0];
+            relay1=obj1["relay1"];  //->relay1=>조명조절
+            relay2=obj1["relay2"];  //->relay2=>수위조절
+            relay3=obj1["relay3"];  //->relay3=>환기조절
+            relay4=obj1["relay4"];  //->relay4=>히터조절
+            autoMode=obj1["autoMode"];
+            Serial.println(a);
+            //----------------------------------------------------
+          }
+        } else {
+          Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
         }
+  
+        http.end();
       } else {
-        Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
+        Serial.printf("[HTTP} Unable to connect\n");
       }
-
-      http.end();
-    } else {
-      Serial.printf("[HTTP} Unable to connect\n");
     }
   }
-  
   
 //  센서값 측정
   //#1.온습도센서 D7
@@ -138,38 +141,41 @@ void loop() {
   }
 
 //  센서값을 서버에 전송하는 부분이 여기에 해당함.
-  String httpRequestData = "{\"temperature\":\"" + String(temp) + "\",\"relay1\":\"" + String(relay1)+"\",\"relay2\":\"" + String(relay2)+"\",\"relay3\":\"" + String(relay3)+"\",\"relay4\":\"" + String(relay4)+"\",\"autoMode\":\"" + String(autoMode)+ "\",\"humi\":\"" + String(humi) + "\",\"waterLevel\":\"" + String(val) + "\",\"co2\":\"" + String(mhz.getCO2())+"\"}";
-  if ((WiFi.status() == WL_CONNECTED)) {
+  if((now-previousForPost)>=10000){
+    previousForPost=now;
+    String httpRequestData = "{\"temperature\":\"" + String(temp) + "\",\"relay1\":\"" + String(relay1)+"\",\"relay2\":\"" + String(relay2)+"\",\"relay3\":\"" + String(relay3)+"\",\"relay4\":\"" + String(relay4)+"\",\"autoMode\":\"" + String(autoMode)+ "\",\"humi\":\"" + String(humi) + "\",\"waterLevel\":\"" + String(val) + "\",\"co2\":\"" + String(mhz.getCO2())+"\"}";
+    if ((WiFi.status() == WL_CONNECTED)) {
 
-    WiFiClient client;
-    HTTPClient http;
-
-    Serial.print("[HTTP] begin...\n");
-    // configure traged server and url
-    http.begin(client, "http://ziot.i4624.cf/sql/meka/insert"); //HTTP
-    http.addHeader("Content-Type", "application/json");
-
-    Serial.print("[HTTP] POST...\n");
-    // start connection and send HTTP header and body
-    int httpCode = http.POST(httpRequestData);
-
-    // httpCode will be negative on error
-    if (httpCode > 0) {
-      // HTTP header has been send and Server response header has been handled
-      Serial.printf("[HTTP] POST... code: %d\n", httpCode);
-
-      // file found at server
-      if (httpCode == HTTP_CODE_OK) {
-        const String& payload = http.getString();
-        Serial.println("received payload:\n<<");
-        Serial.println(payload);
-        Serial.println(">>");
+      WiFiClient client;
+      HTTPClient http;
+  
+      Serial.print("[HTTP] begin...\n");
+      // configure traged server and url
+      http.begin(client, "http://ziot.i4624.cf/sql/meka/insert"); //HTTP
+      http.addHeader("Content-Type", "application/json");
+  
+      Serial.print("[HTTP] POST...\n");
+      // start connection and send HTTP header and body
+      int httpCode = http.POST(httpRequestData);
+  
+      // httpCode will be negative on error
+      if (httpCode > 0) {
+        // HTTP header has been send and Server response header has been handled
+        Serial.printf("[HTTP] POST... code: %d\n", httpCode);
+  
+        // file found at server
+        if (httpCode == HTTP_CODE_OK) {
+          const String& payload = http.getString();
+          Serial.println("received payload:\n<<");
+          Serial.println(payload);
+          Serial.println(">>");
+        }
+      } else {
+        Serial.printf("[HTTP] POST... failed, error: %s\n", http.errorToString(httpCode).c_str());
       }
-    } else {
-      Serial.printf("[HTTP] POST... failed, error: %s\n", http.errorToString(httpCode).c_str());
+  
+      http.end();
     }
-
-    http.end();
   }
   //물공급 탱크에 센서를 다는건 아날로그 입력핀의 개수가 부족하여 새로운 보드에 데이터를 따로 보내게
   //만들어야함.
@@ -216,41 +222,39 @@ void loop() {
     }
   }
 
-
 //  수동조작모드의 경우 auto!=1일때
 //  
   else{
-    if(waterPump==1){
-      
+    if(relay2==1){
+      Serial.println("relay2가 1입니다.");
     }
     else{
-      
+      Serial.println("relay2가 0입니다.");
     }
 
-    if(light==1){
-      
+    if(relay1==1){
+      Serial.println("relay1이 1입니다.");
     }
     else{
-      
+      Serial.println("relay1가 0입니다.");
     }
 
-    if(fan==1){
-      if(heater==1){ //히터와 팬 모두 작동.
-        
+    if(relay3==1){
+      if(relay4==1){ //히터와 팬 모두 작동.
+        Serial.println("relay3와 4가 1입니다.");
       }
       else{ //팬만 작동.
-        
+        Serial.println("relay3가 1이고 4가 0입니다.");
       }
     }
     else{
-      if(heater==1){ //히터와 팬 모두 작동.
-        
+      if(relay4==1){ //히터와 팬 모두 작동.
+        Serial.println("relay3가 0이고 4가 1입니다.");
       }
       else{ //히터와 팬 둘다 작동안함.
-        
+        Serial.println("relay3와 4가 0입니다.");
       }
     }
   }
- 
   delay(5000);
 }
