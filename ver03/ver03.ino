@@ -58,8 +58,14 @@ void setup() {
 
 void loop() {
   now=millis();
-  Serial.println(now);
 //  서버에서 데이터 받는 부분이 제일 먼저 들어가야됨.
+  if(now<previousForGet){ //49.7일 연속으로 켜져있을경우 생기는 오버플로우 문제 방지
+    previousForGet=0;
+    previousTime=0;
+    previousForPost=0;
+  }
+  
+    
   if((now-previousForGet)>=1000){
     previousForGet=now;
     if ((WiFi.status()== WL_CONNECTED)) {
@@ -205,9 +211,6 @@ void loop() {
       }else{ //온도가 25보다 크다면 아무것도 작동하지 않음.
         
       }
-    }
-    if(now<previousTime){ //아두이노가 켜지고 49.7일이 지나면 오버플로우가 발생하기 때문에 previousTime을 초기화 시킴.
-      previousTime=0;
     }
     if((now-previousTime)>=43200000){ //12시간임 간격으로
       previousTime=now;
