@@ -227,6 +227,13 @@ void loop() {
 
 //  수동조작모드의 경우 auto!=1일때
 //  
+  
+  // digitalWrite 사용하는 방법 -> pinMode (번호, OUTPUT) 
+  // pinMode(LED_BUILTIN, OUTPUT);
+  // pinMode(swPin, OUTPUT);  
+  // 이런 식으로 해놓고 
+  // DigitalWrite(위에 쓴 핀번호 , High 아니면 low)
+  // 근데 아날로그라이트 쓰면 근데 pwm 방식으로 제어 되나?  
   else{
     if(relay2==1){
       Serial.println("relay2가 1입니다.");
