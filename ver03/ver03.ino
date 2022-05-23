@@ -192,7 +192,7 @@ void loop() {
 
   if(autoMode==1){
     if(val<400){ //적정 수위보다 낮으면 워터펌프가 작동함.
-      digitalWrite(15,HIGH);
+      digitalWrite(15,HIGH); //D15로 하면 작동한다는 말이 있음.
     }
     else{ //적정 수위보다 낮지 않다면 워터펌프가 작동안함.
       digitalWrite(15,LOW);
