@@ -51,9 +51,10 @@ void setup() {
   Serial.println("Timer set to 5 seconds");
   pinMode(4,OUTPUT); //D3
   pinMode(5,OUTPUT); //D2
-  pinMode(16,OUTPUT); //D1
-  pinMode(1,OUTPUT); //D0 D0와 D1은 핀 꽂아놓고 업로드하면 업로드 안되는것으로 앎. ------------
+  pinMode(15,OUTPUT); //D8
+  pinMode(2,OUTPUT); //D4 D0와 D1은 핀 꽂아놓고 업로드하면 업로드 안되는것으로 앎. ------------
 }
+// 릴레이가 각각 2 3 4 8 에 연결되어 있음 
 
 
 void loop() {
