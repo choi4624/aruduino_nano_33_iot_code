@@ -18,9 +18,7 @@ const char* password="g01099844615";
 
 unsigned long now=0;
 unsigned long previousTime=0;
-
 unsigned long previousForPost=0;
-
 unsigned long previousForGet=0;
 
 int lightState=1;
@@ -30,8 +28,6 @@ int relay2=0;
 int relay3=0;
 int relay4=0;
 String payload;
-
-int a;
 
 SoftwareSerial ss(12,14); //RX=D5,TX=D6에 꽂으면 됨.
 MHZ19 mhz(&ss);
@@ -53,6 +49,10 @@ void setup() {
   Serial.println(WiFi.localIP());
 
   Serial.println("Timer set to 5 seconds");
+  pinMode(4,OUTPUT); //D3
+  pinMode(5,OUTPUT); //D2
+  pinMode(16,OUTPUT); //D1
+  pinMode(1,OUTPUT); //D0 D0와 D1은 핀 꽂아놓고 업로드하면 업로드 안되는것으로 앎. ------------
 }
 
 
@@ -69,15 +69,12 @@ void loop() {
   if((now-previousForGet)>=1000){
     previousForGet=now;
     if ((WiFi.status()== WL_CONNECTED)) {
-  
       WiFiClient client;
-  
       HTTPClient http;
   
       Serial.print("[HTTP] begin...\n");
       if (http.begin(client, "http://ziot.i4624.cf/sql/meka/table/final")) {  // HTTP
-  
-  
+
         Serial.print("[HTTP] GET...\n");
         // start connection and send HTTP header
         int httpCode = http.GET();
@@ -91,7 +88,6 @@ void loop() {
           if (httpCode == HTTP_CODE_OK || httpCode == HTTP_CODE_MOVED_PERMANENTLY) {
             payload = http.getString();
             Serial.println(payload);
-            //--------------처음에만 정상적으로 값이 나오고 두번째부터 0이 나옴
             StaticJsonBuffer<400> jsonBuffer;
             JsonArray& array1=jsonBuffer.parseArray(payload);
             JsonObject& obj1=array1[0];
@@ -100,8 +96,6 @@ void loop() {
             relay3=obj1["relay3"];  //->relay3=>환기조절
             relay4=obj1["relay4"];  //->relay4=>히터조절
             autoMode=obj1["autoMode"];
-            Serial.println(a);
-            //----------------------------------------------------
           }
         } else {
           Serial.printf("[HTTP] GET... failed, error: %s\n", http.errorToString(httpCode).c_str());
@@ -130,7 +124,7 @@ void loop() {
   Serial.print(humi);
   Serial.println("%");
   //#2.수위센서 A0
-  int val =analogRead(A0); //아날로그 0번핀이 수위센서 val이 500정도보다 작으면 waterPump 작동하도록 할것.
+  int val =analogRead(A0);
   Serial.print("수위 : ");
   Serial.println(val);
   //#3.이산화탄소센서 Rx=D5, Tx=D6
@@ -147,7 +141,7 @@ void loop() {
   }
 
 //  센서값을 서버에 전송하는 부분이 여기에 해당함.
-  if((now-previousForPost)>=10000){
+  if((now-previousForPost)>=5000){
     previousForPost=now;
     String httpRequestData = "{\"temperature\":\"" + String(temp) + "\",\"relay1\":\"" + String(relay1)+"\",\"relay2\":\"" + String(relay2)+"\",\"relay3\":\"" + String(relay3)+"\",\"relay4\":\"" + String(relay4)+"\",\"autoMode\":\"" + String(autoMode)+ "\",\"humi\":\"" + String(humi) + "\",\"waterLevel\":\"" + String(val) + "\",\"co2\":\"" + String(mhz.getCO2())+"\"}";
     if ((WiFi.status() == WL_CONNECTED)) {
@@ -192,10 +186,10 @@ void loop() {
 
   if(autoMode==1){
     if(val<400){ //적정 수위보다 낮으면 워터펌프가 작동함.
-      digitalWrite(15,HIGH); //D15로 하면 작동한다는 말이 있음.
+      
     }
     else{ //적정 수위보다 낮지 않다면 워터펌프가 작동안함.
-      digitalWrite(15,LOW);
+      
     }
   
     if(mhz.getCO2()<300){ //이산화탄소 농도가 300ppm 이하일 경우 팬이 작동함.
@@ -227,26 +221,23 @@ void loop() {
 
 //  수동조작모드의 경우 auto!=1일때
 //  
-  
-  // digitalWrite 사용하는 방법 -> pinMode (번호, OUTPUT) 
-  // pinMode(LED_BUILTIN, OUTPUT);
-  // pinMode(swPin, OUTPUT);  
-  // 이런 식으로 해놓고 
-  // DigitalWrite(위에 쓴 핀번호 , High 아니면 low)
-  // 근데 아날로그라이트 쓰면 근데 pwm 방식으로 제어 되나?  
   else{
     if(relay2==1){
       Serial.println("relay2가 1입니다.");
+      
     }
     else{
       Serial.println("relay2가 0입니다.");
+      
     }
 
     if(relay1==1){
       Serial.println("relay1이 1입니다.");
+      
     }
     else{
       Serial.println("relay1가 0입니다.");
+      
     }
 
     if(relay3==1){
@@ -266,5 +257,4 @@ void loop() {
       }
     }
   }
-  delay(5000);
 }
