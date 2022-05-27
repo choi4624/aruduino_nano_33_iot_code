@@ -51,10 +51,9 @@ void setup() {
   Serial.println("Timer set to 5 seconds");
   pinMode(4,OUTPUT); //D3
   pinMode(5,OUTPUT); //D2
-  pinMode(15,OUTPUT); //D8
-  pinMode(2,OUTPUT); //D4 D0와 D1은 핀 꽂아놓고 업로드하면 업로드 안되는것으로 앎. ------------
+  pinMode(16,OUTPUT); //D1
+  pinMode(1,OUTPUT); //D0 D0와 D1은 핀 꽂아놓고 업로드하면 업로드 안되는것으로 앎. ------------
 }
-// 릴레이가 각각 2 3 4 8 에 연결되어 있음 
 
 
 void loop() {
@@ -66,7 +65,6 @@ void loop() {
     previousForPost=0;
   }
   
-    
   if((now-previousForGet)>=1000){
     previousForGet=now;
     if ((WiFi.status()== WL_CONNECTED)) {
@@ -74,7 +72,7 @@ void loop() {
       HTTPClient http;
   
       Serial.print("[HTTP] begin...\n");
-      if (http.begin(client, "http://ziot.i4624.cf/sql/meka/table/final")) {  // HTTP
+      if (http.begin(client, "http://ziot.i4624.tk/sql/meka/table/final")) {  // HTTP
 
         Serial.print("[HTTP] GET...\n");
         // start connection and send HTTP header
@@ -152,7 +150,7 @@ void loop() {
   
       Serial.print("[HTTP] begin...\n");
       // configure traged server and url
-      http.begin(client, "http://ziot.i4624.cf/sql/meka/insert"); //HTTP
+      http.begin(client, "http://ziot.i4624.tk/sql/meka/insert"); //HTTP
       http.addHeader("Content-Type", "application/json");
   
       Serial.print("[HTTP] POST...\n");
