@@ -49,10 +49,12 @@ void setup() {
   Serial.println(WiFi.localIP());
 
   Serial.println("Timer set to 5 seconds");
-  pinMode(4,OUTPUT); //D3
-  pinMode(5,OUTPUT); //D2
-  pinMode(16,OUTPUT); //D1
-  pinMode(1,OUTPUT); //D0 D0와 D1은 핀 꽂아놓고 업로드하면 업로드 안되는것으로 앎. ------------
+  pinMode(4,OUTPUT); //D4
+  pinMode(5,OUTPUT); //D3
+  pinMode(16,OUTPUT); //D2
+  pinMode(1,OUTPUT); //D1 D0와 D1은 핀 꽂아놓고 업로드하면 업로드 안되는것으로 앎. ------------
+
+  digitalWrite(1,HIGH);
 }
 
 
@@ -90,10 +92,10 @@ void loop() {
             StaticJsonBuffer<400> jsonBuffer;
             JsonArray& array1=jsonBuffer.parseArray(payload);
             JsonObject& obj1=array1[0];
-            relay1=obj1["relay1"];  //->relay1=>조명조절
-            relay2=obj1["relay2"];  //->relay2=>수위조절
-            relay3=obj1["relay3"];  //->relay3=>환기조절
-            relay4=obj1["relay4"];  //->relay4=>히터조절
+            relay1=obj1["relay1"];  //->relay1=>조명조절 D1
+            relay2=obj1["relay2"];  //->relay2=>수위조절 D2
+            relay3=obj1["relay3"];  //->relay3=>환기조절 D3
+            relay4=obj1["relay4"];  //->relay4=>히터조절 D4
             autoMode=obj1["autoMode"];
           }
         } else {
@@ -185,35 +187,39 @@ void loop() {
 
   if(autoMode==1){
     if(val<400){ //적정 수위보다 낮으면 워터펌프가 작동함.
-      
+      digitalWrite(16,HIGH);
     }
     else{ //적정 수위보다 낮지 않다면 워터펌프가 작동안함.
-      
+      digitalWrite(16,LOW);
     }
   
-    if(mhz.getCO2()<300){ //이산화탄소 농도가 300ppm 이하일 경우 팬이 작동함.
+    if(mhz.getCO2()>400){ //이산화탄소 농도가 400ppm 이상일 경우 팬이 작동함.
       if(temp<25){ //온도가 25보다 작다면 히터가 작동함.(히터&팬 작동)
-        
+        digitalWrite(5,HIGH); //D3는 팬
+        digitalWrite(4,HIGH); //D4는 히터
       }else{ //온도가 25보다 크다면 팬만(팬만 작동)
-        
+        digitalWrite(5,HIGH);
+        digitalWrite(4,LOW);
       }
     }
-    else{ //이산화탄소 농도가 1000ppm 이하일 경우 팬이 작동하지 않음.
+    else{ //이산화탄소 농도가 400ppm 이하일 경우 팬이 작동하지 않음.
       if(temp<25){ //온도가 25보다 작다면 히터가 작동함.(히터&팬 작동)
-        
+        digitalWrite(5,HIGH);
+        digitalWrite(4,HIGH);
       }else{ //온도가 25보다 크다면 아무것도 작동하지 않음.
-        
+        digitalWrite(5,LOW);
+        digitalWrite(4,LOW);
       }
     }
     if((now-previousTime)>=43200000){ //12시간임 간격으로
       previousTime=now;
       if(lightState==1){
         lightState=0;
-        
+        digitalWrite(1,LOW); //D1이 조명핀임.
       }
       else{
         lightState=1;
-        
+        digitalWrite(1,HIGH);
       }
     }
   }
@@ -222,37 +228,37 @@ void loop() {
 //  
   else{
     if(relay2==1){
-      Serial.println("relay2가 1입니다.");
-      
+      digitalWrite(16,HIGH);
     }
     else{
-      Serial.println("relay2가 0입니다.");
-      
+      digitalWrite(16,LOW);
     }
 
     if(relay1==1){
-      Serial.println("relay1이 1입니다.");
-      
+      digitalWrite(1,HIGH);
     }
     else{
-      Serial.println("relay1가 0입니다.");
-      
+      digitalWrite(1,LOW);
     }
 
     if(relay3==1){
       if(relay4==1){ //히터와 팬 모두 작동.
-        Serial.println("relay3와 4가 1입니다.");
+        digitalWrite(5,HIGH);
+        digitalWrite(4,HIGH);
       }
       else{ //팬만 작동.
-        Serial.println("relay3가 1이고 4가 0입니다.");
+        digitalWrite(5,HIGH);
+        digitalWrite(4,LOW);
       }
     }
     else{
       if(relay4==1){ //히터와 팬 모두 작동.
-        Serial.println("relay3가 0이고 4가 1입니다.");
+        digitalWrite(5,HIGH);
+        digitalWrite(4,HIGH);
       }
       else{ //히터와 팬 둘다 작동안함.
-        Serial.println("relay3와 4가 0입니다.");
+        digitalWrite(5,LOW);
+        digitalWrite(4,LOW);
       }
     }
   }
